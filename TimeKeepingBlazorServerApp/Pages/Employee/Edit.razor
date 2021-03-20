@@ -1,0 +1,65 @@
+﻿@page "/Employee/Edit/{id:int}"
+
+@using Microsoft.EntityFrameworkCore
+@using TimeKeepingBlazorServerApp.Persistence
+@using TimeKeepingBlazorServerApp.Model
+@inject IDbContextFactory<SqlDbContext> ContextFactory
+@inject NavigationManager navigation
+
+<h3>Edit</h3>
+
+<EditForm Model="@employee" OnValidSubmit="Update">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label class="control-label">First Name</label>
+        <InputText @bind-Value="employee.FirstName" class="form-control"></InputText>
+        <ValidationMessage For="@(() => employee.FirstName)" class="text-danger" />
+    </div>
+    <div class="form-group">
+        <label class="control-label">Last Name</label>
+        <InputText @bind-Value="employee.LastName" class="form-control"></InputText>
+        <ValidationMessage For="@(() => employee.LastName)" class="text-danger" />
+    </div>
+    <div class="form-group">
+        <label class="control-label">Gender</label>
+        <InputSelect @bind-Value="employee.Gender" class="form-control">
+            <option selected disabled value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+        </InputSelect>
+        <ValidationMessage For="@(() => employee.Gender)" class="text-danger" />
+    </div>
+    <div class="form-group">
+        <label class="control-label">Date Hired</label>
+        <InputDate @bind-Value="employee.DateHired" class="form-control"></InputDate>
+        <ValidationMessage For="@(() => employee.DateHired)" class="text-danger" />
+    </div>
+    <div class="form-group">
+        <input type="submit" class="btn btn-primary" value="Update" />
+    </div>
+</EditForm>
+
+@code {
+    private EmployeeModel employee = new EmployeeModel();
+    [Parameter] public int id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using (var context = ContextFactory.CreateDbContext())
+        {
+            employee = await context.Employees.SingleOrDefaultAsync(e => e.EmployeeId == id);
+        }
+    }
+
+    private async Task Update()
+    {
+        using (var context = ContextFactory.CreateDbContext())
+        {
+            context.Employees.Update(employee);
+            await context.SaveChangesAsync();
+            navigation.NavigateTo("Employee/Index");
+        }
+    }
+}

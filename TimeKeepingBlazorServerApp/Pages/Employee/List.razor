@@ -1,0 +1,97 @@
+﻿@page "/Employee/Index"
+
+@using Microsoft.EntityFrameworkCore
+@using TimeKeepingBlazorServerApp.Persistence
+@using TimeKeepingBlazorServerApp.Model
+@inject IDbContextFactory<SqlDbContext> ContextFactory
+@inject NavigationManager Navigation
+
+
+<a class="btn btn-success mb-3" href="/Employee/Create">Create New</a>
+
+<h3>Employee List</h3>
+
+@if (employees == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Gender</th>
+                <th>Date Hired</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (employees.Length == 0)
+            {
+                <tr>
+                    <td class="text-center" colspan="6">No data found.</td>
+                </tr>
+            }
+            @foreach (var employee in employees)
+            {
+                <tr>
+                    <td><button @onclick="(()=> EditEmployee(employee.EmployeeId))" class="btn btn-link">@employee.EmployeeId</button></td>
+                    <td>@employee.FirstName</td>
+                    <td>@employee.LastName</td>
+                    <td>@employee.Gender</td>
+                    <td>@employee.DateHired</td>
+                    <td><button @onclick="(()=> DeleteEmployee(employee))" class="btn btn-danger">Delete</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private EmployeeModel[] employees;
+    private bool DataLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (DataLoading)
+        {
+            return;
+        }
+
+        try
+        {
+            using (var context = ContextFactory.CreateDbContext())
+            {
+                employees = await context.Employees.ToArrayAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+
+        finally
+        {
+            DataLoading = false;
+        }
+    }
+
+    private void EditEmployee(int id)
+    {
+        Navigation.NavigateTo("/Employee/Edit/" + id);
+    }
+
+    private async Task DeleteEmployee(EmployeeModel employee)
+    {
+        using (var context = ContextFactory.CreateDbContext())
+        {
+
+            context.Employees.Remove(employee);
+            await context.SaveChangesAsync();
+            employees = employees.Where(e => e.EmployeeId != employee.EmployeeId).ToArray();
+        }
+    }
+}

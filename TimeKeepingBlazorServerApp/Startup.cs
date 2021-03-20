@@ -30,6 +30,7 @@ namespace TimeKeepingBlazorServerApp
             services.AddRazorPages();
             services.AddServerSideBlazor();
             var key = Configuration["ConnectionStrings:SqlDbContext"];
+            services.AddDbContextFactory<SqlDbContext>(options => options.UseSqlServer(key));
             services.AddDbContext<SqlDbContext>(options => options.UseSqlServer(key));
         }
 
