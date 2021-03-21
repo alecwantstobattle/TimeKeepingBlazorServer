@@ -10,6 +10,7 @@ namespace TimeKeepingBlazorServerApp.Persistence
     public class SqlDbContext: DbContext
     {
         public DbSet<EmployeeModel> Employees{ get; set; }
+        public DbSet<TransactionType> TransactionTypes{ get; set; }
 
         public SqlDbContext(DbContextOptions<SqlDbContext> options)
             : base(options)
