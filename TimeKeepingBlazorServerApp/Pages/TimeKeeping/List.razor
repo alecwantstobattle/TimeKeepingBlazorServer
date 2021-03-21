@@ -1,0 +1,97 @@
+﻿@page "/TimeKeeping/Index"
+
+@using Microsoft.EntityFrameworkCore
+@using TimeKeepingBlazorServerApp.Persistence
+@using TimeKeepingBlazorServerApp.Model
+@inject IDbContextFactory<SqlDbContext> ContextFactory
+@inject NavigationManager Navigation
+
+
+<a class="btn btn-success mb-3" href="/TimeKeeping/Create">Create New</a>
+
+<h3>Timekeeping Transactions</h3>
+
+@if (timeKeepingTransactions == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Employee</th>
+                <th>Transaction Type</th>
+                <th>Transaction Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (timeKeepingTransactions.Length == 0)
+            {
+                <tr>
+                    <td class="text-center" colspan="5">No data found.</td>
+                </tr>
+            }
+            @foreach (var timeKeepingTransaction in timeKeepingTransactions)
+            {
+                <tr>
+                    <td><button @onclick="(()=> EditTransaction(timeKeepingTransaction.TimeKeepingTransactionId))" class="btn btn-link">@timeKeepingTransaction.TimeKeepingTransactionId</button></td>
+                    <td>@timeKeepingTransaction.Employee.FirstName @timeKeepingTransaction.Employee.LastName</td>
+                    <td>@timeKeepingTransaction.TransactionType.TransactionTypeName</td>
+                    <td>@timeKeepingTransaction.TransactionDateTime</td>
+                    <td><button @onclick="(()=> DeleteTransaction(timeKeepingTransaction))" class="btn btn-danger">Delete</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private TimeKeepingTransaction[] timeKeepingTransactions;
+    private EmployeeModel[] employees;
+    private TransactionType[] transactionTypes;
+    private bool DataLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (DataLoading)
+        {
+            return;
+        }
+
+        try
+        {
+            using (var context = ContextFactory.CreateDbContext())
+            {
+                timeKeepingTransactions = await context.TimeKeepingTransactions.Include(tk => tk.Employee).Include(tk => tk.TransactionType).ToArrayAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+
+        finally
+        {
+            DataLoading = false;
+        }
+    }
+
+    private void EditTransaction(int id)
+    {
+        Navigation.NavigateTo("/TimeKeeping/Edit/" + id);
+    }
+
+    private async Task DeleteTransaction(TimeKeepingTransaction timeKeepingTransaction)
+    {
+        using (var context = ContextFactory.CreateDbContext())
+        {
+
+            context.TimeKeepingTransactions.Remove(timeKeepingTransaction);
+            await context.SaveChangesAsync();
+            timeKeepingTransactions = timeKeepingTransactions.Where(e => e.TimeKeepingTransactionId != timeKeepingTransaction.TimeKeepingTransactionId).ToArray();
+        }
+    }
+}

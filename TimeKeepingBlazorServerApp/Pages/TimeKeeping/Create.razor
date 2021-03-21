@@ -1,0 +1,108 @@
+﻿@page "/TimeKeeping/Create"
+
+@using Microsoft.EntityFrameworkCore
+@using TimeKeepingBlazorServerApp.Persistence
+@using TimeKeepingBlazorServerApp.Model
+@inject IDbContextFactory<SqlDbContext> ContextFactory
+@inject NavigationManager Navigation
+
+<h3>Create Timekeeping Transaction</h3>
+
+<EditForm Model="@timeKeepingTransaction" OnValidSubmit="Submit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label class="control-label">Employee</label>
+        <select @onchange="EmployeeChange" class="form-control">
+            <option selected disabled value="">Select Employee</option>
+            @if (employees != null)
+            {
+                @foreach (var employee in employees)
+                {
+                    <option value="@employee.EmployeeId">@employee.FirstName @employee.LastName</option>
+                }
+            }
+        </select>
+        <ValidationMessage For="@(() => timeKeepingTransaction.EmployeeId)" class="text-danger" />
+    </div>
+    <div class="form-group">
+        <label class="control-label">Transaction Type</label>
+        <select @onchange="TransactionTypeChange" class="form-control">
+            <option selected disabled value="">Select Transaction Type</option>
+            @if (transactionTypes != null)
+            {
+                @foreach (var transactionType in transactionTypes)
+                {
+                    <option value=@transactionType.TransactionTypeId>@transactionType.TransactionTypeName</option>
+                }
+            }
+        </select>
+        <ValidationMessage For="@(() => timeKeepingTransaction.TransactionTypeId)" class="text-danger" />
+    </div>
+    <div class="form-group">
+        <label class="control-label">Date Hired</label>
+        <InputDate @bind-Value="timeKeepingTransaction.TransactionDateTime" class="form-control"></InputDate>
+        <ValidationMessage For="@(() => timeKeepingTransaction.TransactionDateTime)" class="text-danger" />
+    </div>
+    <div class="form-group">
+        <input type="submit" class="btn btn-primary" value="Submit" />
+    </div>
+</EditForm>
+
+@code {
+    private EmployeeModel[] employees;
+    private TransactionType[] transactionTypes;
+    private TimeKeepingTransaction timeKeepingTransaction = new TimeKeepingTransaction()
+    {
+        TransactionDateTime = DateTime.Now
+    };
+    private bool DataLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (DataLoading)
+        {
+            return;
+        }
+
+        try
+        {
+            using (var context = ContextFactory.CreateDbContext())
+            {
+                employees = await context.Employees.ToArrayAsync();
+                transactionTypes = await context.TransactionTypes.ToArrayAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+
+        finally
+        {
+            DataLoading = false;
+        }
+    }
+
+
+    private void TransactionTypeChange(ChangeEventArgs args)
+    {
+        timeKeepingTransaction.TransactionTypeId = Int32.Parse(args.Value.ToString());
+    }
+
+    private void EmployeeChange(ChangeEventArgs args)
+    {
+        timeKeepingTransaction.EmployeeId = Int32.Parse(args.Value.ToString());
+    }
+
+    private async Task Submit()
+    {
+        using (var context = ContextFactory.CreateDbContext())
+        {
+            context.TimeKeepingTransactions.Add(timeKeepingTransaction);
+            await context.SaveChangesAsync();
+            Navigation.NavigateTo("/TimeKeeping/Index");
+        }
+    }
+}
